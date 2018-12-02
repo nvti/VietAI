@@ -5,6 +5,7 @@ from matplotlib import pyplot as plt
 def generate_data(a, b, train_set_ratio=0.5):
     # Generate data around line y = ax + b
     x = np.arange(-10, 10, 0.2)
+    np.random.shuffle(x)
     y = a * x + b + 5 * np.random.rand(len(x))
 
     data_size = len(x)
