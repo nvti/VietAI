@@ -7,7 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from util import get_vehicle_data
 
-import pdb
+# import pdb
 
 
 class LogisticClassifier(object):
@@ -17,8 +17,8 @@ class LogisticClassifier(object):
         :param w_shape: create w with shape w_shape using normal distribution
         """
 
-        mean = 0
-        std = 1
+        # mean = 0
+        # std = 1
         self.w = np.random.normal(0, np.sqrt(2./np.sum(w_shape)), w_shape)
 
 
@@ -33,7 +33,7 @@ class LogisticClassifier(object):
         # [TODO 1.5]
         # Compute feedforward result
 
-        result = None 
+        result = 1/(1 + np.exp(-1 * x.dot(self.w)))
         return result
 
 
@@ -49,7 +49,7 @@ class LogisticClassifier(object):
         # [TODO 1.6]
         # Compute loss value (a single number)
 
-        loss = 0
+        loss = -1 * np.sum(y * np.log(y_hat) + (1 - y) * np.log(1 - y_hat)) / len(y)
         return loss
 
 
@@ -65,7 +65,7 @@ class LogisticClassifier(object):
         # [TODO 1.7]
         # Compute the gradient matrix of w, it has the same size of w
 
-        w_grad = None
+        w_grad = x.T.dot(y_hat - y) / len(y)
         return w_grad
 
 
@@ -79,7 +79,7 @@ class LogisticClassifier(object):
         # [TODO 1.8]
         # Update w using SGD
 
-        self.w = self.w
+        self.w = self.w - learning_rate * grad
 
 
     def update_weight_momentum(self, grad, learning_rate, momentum, momentum_rate):
@@ -94,7 +94,7 @@ class LogisticClassifier(object):
         # [TODO 1.9]
         # Update w using SGD with momentum
 
-        self.w = self.w
+        self.w = self.w - learning_rate * grad - momentum * momentum_rate
 
     
 def plot_loss(all_loss):
@@ -115,6 +115,12 @@ def normalize_per_pixel(train_x, test_x):
     # train_x = ...
     # test_x = ...
 
+    train_x_mean = train_x.mean(axis=0)
+    train_x_std = train_x.std(axis=0)
+
+    train_x = (train_x - train_x_mean) / train_x_std
+    test_x = (test_x - train_x_mean) / train_x_std
+
     return train_x, test_x
 
 
@@ -130,6 +136,12 @@ def normalize_all_pixel(train_x, test_x):
     # train_x = ...
     # test_x = ...
 
+    train_x_mean = train_x.mean()
+    train_x_std = train_x.std()
+
+    train_x = (train_x - train_x_mean) / train_x_std
+    test_x = (test_x - train_x_mean) / train_x_std
+
     return train_x, test_x
 
 
@@ -138,6 +150,8 @@ def reshape2D(tensor):
     Reshape our 3D tensors to 2D. A 3D tensor of shape (num_samples, image_height, image_width) must be reshaped into (num_samples, image_height*image_width)
     """
     # [TODO 1.3]
+
+    tensor = tensor.reshape((tensor.shape[0], tensor.shape[1] * tensor.shape[2]))
 
     return tensor
 
@@ -149,7 +163,7 @@ def add_one(x):
     :param x: input data
     """
     # [TODO 1.4]
-
+    x = np.concatenate((x, np.ones(shape=(x.shape[0], 1))), axis=1)
     return x
 
 

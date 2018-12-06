@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 from util import get_mnist_data
 from logistic_np import add_one, LogisticClassifier
 
-import pdb
+# import pdb
 
 
 class SoftmaxClassifier(LogisticClassifier):
@@ -28,7 +28,8 @@ class SoftmaxClassifier(LogisticClassifier):
         # [TODO 2.3]
         # Compute softmax
 
-        return None
+        e_x = np.exp(x)
+        return e_x / e_x.sum(axis=0)
 
 
     def feed_forward(self, x):
@@ -40,7 +41,7 @@ class SoftmaxClassifier(LogisticClassifier):
         # [TODO 2.3]
         # Compute a feed forward pass
 
-        return None
+        return self.softmax(x.dot(self.w))
 
 
     def compute_loss(self, y, y_hat):
@@ -99,6 +100,12 @@ def normalize(train_x, val_x, test_x):
     """
     # [TODO 2.1]
     # train_mean and train_std should have the shape of (1, 1)
+    train_x_mean = train_x.mean()
+    train_x_std = train_x.std()
+
+    train_x = (train_x - train_x_mean) / train_x_std
+    val_x = (val_x - train_x_mean) / train_x_std
+    test_x = (test_x - train_x_mean) / train_x_std
 
     return train_x, val_x, test_x
 
@@ -113,7 +120,7 @@ def create_one_hot(labels, num_k=10):
     # [TODO 2.2]
     # Create the one-hot label matrix here based on labels
 
-    return None 
+    return np.eye(num_k)[labels]
 
 
 def test(y_hat, test_y):
