@@ -28,8 +28,8 @@ class SoftmaxClassifier(LogisticClassifier):
         # [TODO 2.3]
         # Compute softmax
 
-        e_x = np.exp(x)
-        return e_x / e_x.sum(axis=0)
+        e_x = np.exp(x - np.max(x, axis=1, keepdims=True))
+        return e_x / e_x.sum(axis=1, keepdims=True)
 
 
     def feed_forward(self, x):
@@ -54,7 +54,7 @@ class SoftmaxClassifier(LogisticClassifier):
         # [TODO 2.4]
         # Compute categorical loss
 
-        return 0
+        return -1 * np.sum(y * np.log(y_hat)) / len(y)
 
 
     def get_grad(self, x, y, y_hat):
@@ -67,7 +67,7 @@ class SoftmaxClassifier(LogisticClassifier):
         # [TODO 2.5]
         # Compute gradient of the loss function with respect to w
 
-        return None    
+        return x.T.dot(y_hat - y) / len(y)
 
 
 def plot_loss(train_loss, val_loss):
@@ -77,7 +77,7 @@ def plot_loss(train_loss, val_loss):
     plt.plot(val_loss, color='g')
 
 
-def draw_weight(classifier):
+def draw_weight(w):
     label_names = ['T-shirt', 'Trouser', 'Pullover', 'Dress', 'Coat', 'Sandal', 'Shirt', 'Sneaker', 'Bag', 'Ankle boot']
     plt.figure(2, figsize=(8, 6))
     plt.clf()
@@ -131,11 +131,19 @@ def test(y_hat, test_y):
     :param y_hat: predicted probabilites, output of classifier.feed_forward
     :param test_y: test labels
     """
-    
-    confusion_mat = np.zeros((10,10))
+    print(y_hat.shape)
+    print(test_y.shape)
+
+    y_pred = np.eye(y_hat.shape[1])[np.argmax(y_hat, axis=1)]
+
+    confusion_mat = np.zeros((10, 10))
 
     # [TODO 2.7]
     # Compute the confusion matrix here
+
+    for i in range(10):
+        row_i = np.sum(np.reshape(test_y[:, i], (y_hat.shape[0], 1)) * y_pred, axis=0)
+        confusion_mat[i, :] = row_i / np.sum(row_i)
 
     np.set_printoptions(precision=2)
     print('Confusion matrix:')
@@ -154,7 +162,7 @@ if __name__ == "__main__":
     num_val = val_x.shape[0]
     num_test = test_x.shape[0]  
 
-    generate_unit_testcase(train_x.copy(), train_y.copy()) 
+    #generate_unit_testcase(train_x.copy(), train_y.copy())
 
     # Convert label lists to one-hot (one-of-k) encoding
     train_y = create_one_hot(train_y)
@@ -202,12 +210,15 @@ if __name__ == "__main__":
 
         # [TODO 2.6]
         # Propose your own stopping condition here
+        if len(all_val_loss) >= 2:
+            if all_val_loss[-2] - val_loss < 1e-6:  # gia tri val_loss gan nhu khong giam
+                break
 
-        if (e % epochs_to_draw == epochs_to_draw-1):
-            plot_loss(all_train_loss, all_val_loss)
-            draw_weight(dec_classifier.w)
-            plt.show()
-            plt.pause(0.1) 
+        if e % epochs_to_draw == epochs_to_draw-1:
+            # plot_loss(all_train_loss, all_val_loss)
+            # draw_weight(dec_classifier.w)
+            # plt.show()
+            # plt.pause(0.1)
             print("Epoch %d: train loss: %.5f || val loss: %.5f" % (e+1, train_loss, val_loss))
 
     y_hat = dec_classifier.feed_forward(test_x)

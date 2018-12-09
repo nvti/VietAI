@@ -21,7 +21,6 @@ class LogisticClassifier(object):
         # std = 1
         self.w = np.random.normal(0, np.sqrt(2./np.sum(w_shape)), w_shape)
 
-
     def feed_forward(self, x):
         """feed_forward
         This function compute the output of your logistic classification model
@@ -35,7 +34,6 @@ class LogisticClassifier(object):
 
         result = 1/(1 + np.exp(-1 * x.dot(self.w)))
         return result
-
 
     def compute_loss(self, y, y_hat):
         """compute_loss
@@ -52,7 +50,6 @@ class LogisticClassifier(object):
         loss = -1 * np.sum(y * np.log(y_hat) + (1 - y) * np.log(1 - y_hat)) / len(y)
         return loss
 
-
     def get_grad(self, x, y, y_hat):
         """get_grad
         Compute and return the gradient of w
@@ -68,7 +65,6 @@ class LogisticClassifier(object):
         w_grad = x.T.dot(y_hat - y) / len(y)
         return w_grad
 
-
     def update_weight(self, grad, learning_rate):
         """update_weight
         Update w using the computed gradient
@@ -80,7 +76,6 @@ class LogisticClassifier(object):
         # Update w using SGD
 
         self.w = self.w - learning_rate * grad
-
 
     def update_weight_momentum(self, grad, learning_rate, momentum, momentum_rate):
         """update_weight with momentum
@@ -105,7 +100,8 @@ def plot_loss(all_loss):
 
 def normalize_per_pixel(train_x, test_x):
     """normalize_per_pixel
-    This function computes train mean and standard deviation on each pixel then applying data scaling on train_x and test_x using these computed values
+    This function computes train mean and standard deviation on each pixel then applying data scaling on train_x and
+    test_x using these computed values
 
     :param train_x: train images, shape=(num_train, image_height, image_width)
     :param test_x: test images, shape=(num_test, image_height, image_width)
@@ -126,7 +122,8 @@ def normalize_per_pixel(train_x, test_x):
 
 def normalize_all_pixel(train_x, test_x):
     """normalize_all_pixel
-    This function computes train mean and standard deviation on all pixels then applying data scaling on train_x and test_x using these computed values
+    This function computes train mean and standard deviation on all pixels then applying data scaling on train_x and
+    test_x using these computed values
 
     :param train_x: train images, shape=(num_train, image_height, image_width)
     :param test_x: test images, shape=(num_test, image_height, image_width)
@@ -147,7 +144,8 @@ def normalize_all_pixel(train_x, test_x):
 
 def reshape2D(tensor):
     """reshape_2D
-    Reshape our 3D tensors to 2D. A 3D tensor of shape (num_samples, image_height, image_width) must be reshaped into (num_samples, image_height*image_width)
+    Reshape our 3D tensors to 2D. A 3D tensor of shape (num_samples, image_height, image_width) must be reshaped into
+    (num_samples, image_height*image_width)
     """
     # [TODO 1.3]
 
@@ -178,9 +176,13 @@ def test(y_hat, test_y):
     # [TODO 1.10]
     # Compute test scores using test_y and y_hat
 
-    precision = 0
-    recall = 0
-    f1 = 0
+    tp = np.sum([y_hat >= 0.5] * test_y)
+    fp = np.sum([y_hat >= 0.5]) - tp
+    p = np.sum(test_y)
+
+    precision = tp / (tp + fp)
+    recall = tp / p
+    f1 = 2 / (1/ precision + 1 / recall)
     print("Precision: %.3f" % precision)
     print("Recall: %.3f" % recall)
     print("F1-score: %.3f" % f1)

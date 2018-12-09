@@ -7,8 +7,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import tensorflow as tf
 from util import get_mnist_data
-from logistic_np_sol import add_one
-from softmax_np_sol import *
+from logistic_np import add_one
+from softmax_np import *
 
 
 if __name__ == "__main__":
@@ -36,26 +36,30 @@ if __name__ == "__main__":
     train_x = add_one(train_x) 
     val_x = add_one(val_x)
     test_x = add_one(test_x)
-   
+
+    print(train_x.shape)
+    print(train_y.shape)
+
     # [TODO 2.8] Create TF placeholders to feed train_x and train_y when training
-    x = None
-    y = None
+    x = tf.placeholder(dtype=np.float32, shape=(None, train_x.shape[1]))
+    y = tf.placeholder(dtype=np.float32, shape=(None, train_y.shape[1]))
 
     # [TODO 2.8] Create weights (W) using TF variables 
-    w = None 
+    w = tf.Variable(initial_value=tf.random_normal(shape=(train_x.shape[1], train_y.shape[1]), dtype=np.float32))
 
     # [TODO 2.9] Create a feed-forward operator 
-    pred = None
+    pred = tf.math.softmax(tf.matmul(x, w))
 
     # [TODO 2.10] Write the cost function
-    cost = 0
+    batch_size = tf.placeholder(np.float32)
+    cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(labels=y, logits=pred)) / batch_size
 
     # Define hyper-parameters and train-related parameters
     num_epoch = 10000
     learning_rate = 0.01    
 
     # [TODO 2.8] Create an SGD optimizer
-    optimizer = None
+    optimizer = tf.train.GradientDescentOptimizer(learning_rate).minimize(cost)
 
     # Some meta parameters
     epochs_to_draw = 10
@@ -73,9 +77,11 @@ if __name__ == "__main__":
 
         for e in range(num_epoch):
             # [TODO 2.8] Compute losses and update weights here
-            train_loss = 0 
-            val_loss = 0 
+            _, train_loss = sess.run([optimizer, cost],
+                                     feed_dict={x: train_x, y: train_y, batch_size: train_y.shape[0]})
+            val_loss = sess.run(pred, feed_dict={x: train_x})
             # Update weights
+            w_op = sess.run(w)
 
             all_train_loss.append(train_loss)
             all_val_loss.append(val_loss)
@@ -83,11 +89,11 @@ if __name__ == "__main__":
             # [TODO 2.11] Define your own stopping condition here 
             if (e % epochs_to_draw == epochs_to_draw-1):
                 plot_loss(all_train_loss, all_val_loss)
-                w_  = sess.run(w)
+                w_ = sess.run(w)
                 draw_weight(w_)
                 plt.show()
                 plt.pause(0.1)     
                 print("Epoch %d: train loss: %.5f || val loss: %.5f" % (e+1, train_loss, val_loss))
         
-        y_hat = sess.run(pred, feed_dict={'x:0': test_x})
+        y_hat = sess.run(pred, feed_dict={x: test_x})
         test(y_hat, test_y)
