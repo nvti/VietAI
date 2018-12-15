@@ -131,17 +131,15 @@ def test(y_hat, test_y):
     :param y_hat: predicted probabilites, output of classifier.feed_forward
     :param test_y: test labels
     """
-    print(y_hat.shape)
-    print(test_y.shape)
+    num_class = y_hat.shape[1]
+    y_pred = np.eye(num_class)[np.argmax(y_hat, axis=1)]
 
-    y_pred = np.eye(y_hat.shape[1])[np.argmax(y_hat, axis=1)]
-
-    confusion_mat = np.zeros((10, 10))
+    confusion_mat = np.zeros((num_class, num_class))
 
     # [TODO 2.7]
     # Compute the confusion matrix here
 
-    for i in range(10):
+    for i in range(num_class):
         row_i = np.sum(np.reshape(test_y[:, i], (y_hat.shape[0], 1)) * y_pred, axis=0)
         confusion_mat[i, :] = row_i / np.sum(row_i)
 
@@ -149,7 +147,7 @@ def test(y_hat, test_y):
     print('Confusion matrix:')
     print(confusion_mat)
     print('Diagonal values:')
-    print(confusion_mat.flatten()[0::11])
+    print(confusion_mat.flatten()[0::(num_class + 1)])
 
 
 if __name__ == "__main__":
@@ -215,10 +213,10 @@ if __name__ == "__main__":
                 break
 
         if e % epochs_to_draw == epochs_to_draw-1:
-            # plot_loss(all_train_loss, all_val_loss)
-            # draw_weight(dec_classifier.w)
-            # plt.show()
-            # plt.pause(0.1)
+            plot_loss(all_train_loss, all_val_loss)
+            draw_weight(dec_classifier.w)
+            plt.show()
+            plt.pause(0.1)
             print("Epoch %d: train loss: %.5f || val loss: %.5f" % (e+1, train_loss, val_loss))
 
     y_hat = dec_classifier.feed_forward(test_x)

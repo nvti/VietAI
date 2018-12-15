@@ -22,6 +22,8 @@ if __name__ == "__main__":
     num_val = val_x.shape[0]
     num_test = test_x.shape[0]  
 
+    print(num_train)
+    print(num_val)
     # generate_unit_testcase(train_x.copy(), train_y.copy()) 
 
     # Convert label lists to one-hot (one-of-k) encoding
@@ -37,26 +39,25 @@ if __name__ == "__main__":
     val_x = add_one(val_x)
     test_x = add_one(test_x)
 
-    print(train_x.shape)
-    print(train_y.shape)
-
     # [TODO 2.8] Create TF placeholders to feed train_x and train_y when training
     x = tf.placeholder(dtype=np.float32, shape=(None, train_x.shape[1]))
     y = tf.placeholder(dtype=np.float32, shape=(None, train_y.shape[1]))
 
     # [TODO 2.8] Create weights (W) using TF variables 
-    w = tf.Variable(initial_value=tf.random_normal(shape=(train_x.shape[1], train_y.shape[1]), dtype=np.float32))
+    w = tf.Variable(initial_value=tf.random_normal(shape=(train_x.shape[1], train_y.shape[1]), dtype=np.float32, mean=0.0, stddev=1/np.sqrt(num_train)))
 
-    # [TODO 2.9] Create a feed-forward operator 
-    pred = tf.math.softmax(tf.matmul(x, w))
+    # [TODO 2.9] Create a feed-forward operator
+    logits = tf.matmul(x, w)
+    pred = tf.nn.softmax(logits)
 
     # [TODO 2.10] Write the cost function
-    batch_size = tf.placeholder(np.float32)
-    cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(labels=y, logits=pred)) / batch_size
+    batch_size = tf.placeholder(tf.float32)
+    cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(labels=y, logits=logits))
+    # cost = -1 * tf.reduce_sum(y * tf.log(logits)) / batch_size
 
     # Define hyper-parameters and train-related parameters
     num_epoch = 10000
-    learning_rate = 0.01    
+    learning_rate = 0.01
 
     # [TODO 2.8] Create an SGD optimizer
     optimizer = tf.train.GradientDescentOptimizer(learning_rate).minimize(cost)
@@ -78,21 +79,26 @@ if __name__ == "__main__":
         for e in range(num_epoch):
             # [TODO 2.8] Compute losses and update weights here
             _, train_loss = sess.run([optimizer, cost],
-                                     feed_dict={x: train_x, y: train_y, batch_size: train_y.shape[0]})
-            val_loss = sess.run(pred, feed_dict={x: train_x})
+                                     feed_dict={x: train_x, y: train_y, batch_size: num_train})
+            val_loss = sess.run(cost, feed_dict={x: val_x, y: val_y, batch_size: num_val})
+
             # Update weights
-            w_op = sess.run(w)
+            sess.run(w)
 
             all_train_loss.append(train_loss)
             all_val_loss.append(val_loss)
 
-            # [TODO 2.11] Define your own stopping condition here 
+            # [TODO 2.11] Define your own stopping condition here
+            if len(all_val_loss) >= 2:
+                if all_val_loss[-2] - val_loss < 1e-6:  # gia tri val_loss gan nhu khong giam
+                    break
+
             if (e % epochs_to_draw == epochs_to_draw-1):
                 plot_loss(all_train_loss, all_val_loss)
                 w_ = sess.run(w)
                 draw_weight(w_)
                 plt.show()
-                plt.pause(0.1)     
+                plt.pause(0.1)
                 print("Epoch %d: train loss: %.5f || val loss: %.5f" % (e+1, train_loss, val_loss))
         
         y_hat = sess.run(pred, feed_dict={x: test_x})

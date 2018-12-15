@@ -29,15 +29,12 @@ if __name__ == "__main__":
     # Reshape our data
     # train_x: shape=(2400, 64, 64) -> shape=(2400, 64*64)
     # test_x: shape=(600, 64, 64) -> shape=(600, 64*64)
-    train_x = reshape2D(train_x) / 100
-    test_x = reshape2D(test_x) / 100
+    train_x = reshape2D(train_x)
+    test_x = reshape2D(test_x)
     
     # Pad 1 as the last feature of train_x and test_x
     train_x = add_one(train_x) 
     test_x = add_one(test_x)
-
-    print(train_x.shape)
-    print(train_y.shape)
 
     # [TODO 1.11] Create TF placeholders to feed train_x and train_y when training
     x = tf.placeholder(dtype=np.float32, shape=(None, train_x.shape[1]))
@@ -45,17 +42,18 @@ if __name__ == "__main__":
 
     # [TODO 1.12] Create weights (W) using TF variables
     w_shape = (train_x.shape[1], 1)
-    w = tf.Variable(initial_value=tf.random_normal(shape=w_shape, dtype=np.float32))
+    w = tf.Variable(initial_value=tf.random_normal(shape=w_shape, dtype=np.float32, mean=0.0, stddev=1/np.sqrt(num_train)))
 
     # [TODO 1.13] Create a feed-forward operator
     pred = tf.sigmoid(tf.matmul(x, w))
 
     # [TODO 1.14] Write the cost function
-    cost = -1 * tf.reduce_sum(y * tf.log(pred) + (1 - y) * tf.log(1 - pred)) / tf.to_float(tf.size(y))
+    # cost = -1 * tf.reduce_sum(y * tf.log(pred) + (1 - y) * tf.log(1 - pred)) / tf.to_float(tf.size(y))
+    cost = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=y, logits=tf.matmul(x, w)))
 
     # Define hyper-parameters and train-related parameters
-    num_epoch = 2000
-    learning_rate = 0.5
+    num_epoch = 1000
+    learning_rate = 0.01
 
     # [TODO 1.15] Create an SGD optimizer
     optimizer = tf.train.GradientDescentOptimizer(learning_rate).minimize(cost)
@@ -81,9 +79,9 @@ if __name__ == "__main__":
             all_loss.append(loss)
 
             if e % epochs_to_draw == epochs_to_draw-1:
-                # plot_loss(all_loss)
-                # plt.show()
-                # plt.pause(0.1)
+                plot_loss(all_loss)
+                plt.show()
+                plt.pause(0.1)
                 print("Epoch %d: loss is %.5f" % (e+1, loss))
         
         y_hat = sess.run(pred, feed_dict={x: test_x})
