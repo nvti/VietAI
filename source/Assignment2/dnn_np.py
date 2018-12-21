@@ -8,7 +8,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from util import *
 from activation_np import *
-from gradient_check import *
+# from gradient_check import *
 import pdb
 
 
@@ -48,14 +48,14 @@ class Layer(object):
         result = None
         
         # Compute different types of activation
-        if (self.activation == 'sigmoid'):
-            result = None
-        elif (self.activation == 'relu'):
-            result = None
-        elif (self.activation == 'tanh'):
-            result = None
-        elif (self.activation == 'softmax'):
-            result = None
+        if self.activation == 'sigmoid':
+            result = sigmoid(x)
+        elif self.activation == 'relu':
+            result = reLU(x)
+        elif self.activation == 'tanh':
+            result = tanh(x)
+        elif self.activation == 'softmax':
+            result = softmax(x)
 
         self.output = result
         return result
@@ -69,7 +69,7 @@ class Layer(object):
         """
         # [TODO 1.2]
         if(self.activation == 'sigmoid'):
-            w_grad = None 
+            w_grad = sigmoid_grad()
         
         elif(self.activation == 'tanh'):
            w_grad = None 
@@ -163,7 +163,7 @@ class NeuralNet(object):
             x = all_x[i]
             # [TODO 1.5] Compute delta_prev factor for previous layer (in backpropagation direction)
             delta_prev = 0
-	        # Use delta_prev to compute delta factor for the next layer (in backpropagation direction)
+            # Use delta_prev to compute delta factor for the next layer (in backpropagation direction)
             grad_w, delta = layer.backward(x, delta_prev)
             grad_list.append(grad_w.copy())
 
