@@ -69,16 +69,18 @@ class Layer(object):
         """
         # [TODO 1.2]
         if(self.activation == 'sigmoid'):
-            w_grad = sigmoid_grad()
+            w_grad = sigmoid_grad(self.output)
         
         elif(self.activation == 'tanh'):
-           w_grad = None 
+           w_grad = tanh_grad(self.output)
 
         elif(self.activation == 'relu'):
-           w_grad = None 
+           w_grad = reLU_grad(self.output)
 
         # [TODO 1.4] Implement L2 regularization on weights here
-        w_grad +=  0
+        w_grad += self.reg * self.w
+
+        delta = delta_prev.dot(self.w) * w_grad
         return w_grad, delta.copy()
 
 
@@ -132,10 +134,15 @@ class NeuralNet(object):
 
         # [TODO 1.3]
         # Estimating cross entropy loss from s and y 
-        data_loss = 0
+        data_loss = -1 * np.sum(y * np.log(s))
 
         # Estimating regularization loss from all layers
         reg_loss = 0.0
+
+        for layer in self.layers:
+            reg_loss += np.sum(layer.w ** 2) * layer.reg
+
+        reg_loss /= 2
         data_loss += reg_loss
 
         return data_loss
@@ -148,11 +155,12 @@ class NeuralNet(object):
         """
         
         # [TODO 1.5] Compute delta factor from the output
-        delta = 0
+        y_hat = all_x[-1]
+        delta = self.compute_loss(y, y_hat)
         delta /= y.shape[0]
         
         # [TODO 1.5] Compute gradient of the loss function with respect to w of softmax layer, use delta from the output
-        grad_last = 0
+        grad_last = all_x[-2] * delta
 
         grad_list = []
         grad_list.append(grad_last)
@@ -162,7 +170,7 @@ class NeuralNet(object):
             layer = self.layers[i]
             x = all_x[i]
             # [TODO 1.5] Compute delta_prev factor for previous layer (in backpropagation direction)
-            delta_prev = 0
+            delta_prev = delta
             # Use delta_prev to compute delta factor for the next layer (in backpropagation direction)
             grad_w, delta = layer.backward(x, delta_prev)
             grad_list.append(grad_w.copy())
@@ -204,7 +212,7 @@ def test(s, test_y):
     :param s: predicted probabilites, output of classifier.feed_forward
     :param test_y: test labels
     """
-    if (s.ndim == 2):
+    if s.ndim == 2:
         y_hat = np.argmax(s, axis=1)
     num_class = np.unique(test_y).size
     confusion_mat = np.zeros((num_class, num_class))
@@ -324,14 +332,14 @@ def bat_classification():
     net.add_linear_layer((num_hidden_nodes_2, num_hidden_nodes_3), 'relu')
     net.add_linear_layer((num_hidden_nodes_3, num_class), 'softmax')
     
-    #Sanity check - train in small number of samples to see the overfitting problem- the loss value should decrease rapidly
-    #cfg.num_train = 500
-    #batch_train(net, train_x, train_y, cfg)
+    # Sanity check - train in small number of samples to see the overfitting problem- the loss value should decrease rapidly
+    # cfg.num_train = 500
+    # batch_train(net, train_x, train_y, cfg)
 
-    #Batch training - train all dataset
-    #batch_train(net, train_x, train_y, cfg)
+    # Batch training - train all dataset
+    # batch_train(net, train_x, train_y, cfg)
 
-    #Minibatch training - training dataset using Minibatch approach
+    # Minibatch training - training dataset using Minibatch approach
     minibatch_train(net, train_x, train_y, cfg)
     
     s = net.forward(test_x)[-1]
@@ -364,7 +372,7 @@ def mnist_classification():
     net.add_linear_layer((num_hidden_nodes_2, num_hidden_nodes_3), 'relu')
     net.add_linear_layer((num_hidden_nodes_3, num_class), 'softmax')
      
-    #Minibatch training - training dataset using Minibatch approach
+    # Minibatch training - training dataset using Minibatch approach
     minibatch_train(net, train_x, train_y, cfg)
     
     s = net.forward(test_x)[-1]
@@ -374,7 +382,7 @@ def mnist_classification():
 if __name__ == '__main__':
     np.random.seed(2017)
     
-    #numerical check for your layer feedforward and backpropagation
+    # numerical check for your layer feedforward and backpropagation
     your_layer = Layer((60, 100), 'sigmoid')
     unit_test_layer(your_layer)
 

@@ -64,7 +64,7 @@ def tanh_grad(a):
     :param a: output of tanh
     """
     #[TODO 1.1]
-    return 1 - a * a
+    return 1 - a ** 2
 
 
 def softmax(x):
