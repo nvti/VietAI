@@ -193,6 +193,7 @@ class NeuralNet(object):
         for i in range(len(self.layers)):
             layer = self.layers[i]
             grad = grad_list[i]
+            print("Layer {0}: w={1}, grad={2}".format(i, layer.w.shape, grad.shape))
             layer.w = layer.w - learning_rate * grad
     
     
@@ -345,6 +346,7 @@ def bat_classification():
     train_x = add_one(train_x) 
     test_x = add_one(test_x)
 
+    print("x train: {0}, y_train: {1}".format(train_x.shape, train_y.shape))
     # Define hyper-parameters and train-related parameters
     cfg = Config(num_epoch=1000, learning_rate=0.001, num_train=train_x.shape[0])
 
