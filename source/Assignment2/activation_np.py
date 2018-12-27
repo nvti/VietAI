@@ -33,7 +33,7 @@ def reLU(x):
     :param x: input
     """
     #[TODO 1.1]
-    return max(0, x)
+    return np.maximum(0, x)
 
 
 def reLU_grad(a):

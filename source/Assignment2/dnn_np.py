@@ -8,7 +8,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from util import *
 from activation_np import *
-# from gradient_check import *
+from gradient_check import *
 import pdb
 
 
@@ -49,15 +49,16 @@ class Layer(object):
         
         # Compute different types of activation
         if self.activation == 'sigmoid':
-            result = sigmoid(x)
+            result = sigmoid(x.dot(self.w))
         elif self.activation == 'relu':
-            result = reLU(x)
+            result = reLU(x.dot(self.w))
         elif self.activation == 'tanh':
-            result = tanh(x)
+            result = tanh(x.dot(self.w))
         elif self.activation == 'softmax':
-            result = softmax(x)
+            result = softmax(x.dot(self.w))
 
         self.output = result
+
         return result
 
     def backward(self, x, delta_prev):
@@ -68,19 +69,22 @@ class Layer(object):
         :param delta_prev: delta computed from the next layer (in feedforward direction) or previous layer (in backpropagation direction)
         """
         # [TODO 1.2]
+
         if(self.activation == 'sigmoid'):
-            w_grad = sigmoid_grad(self.output)
+            grad = sigmoid_grad(self.output)
         
         elif(self.activation == 'tanh'):
-           w_grad = tanh_grad(self.output)
+            grad = tanh_grad(self.output)
 
         elif(self.activation == 'relu'):
-           w_grad = reLU_grad(self.output)
+            grad = reLU_grad(self.output)
 
+        w_grad = x.T.dot(grad)
         # [TODO 1.4] Implement L2 regularization on weights here
         w_grad += self.reg * self.w
 
-        delta = delta_prev.dot(self.w) * w_grad
+        delta = (delta_prev * grad).dot(self.w.T)
+
         return w_grad, delta.copy()
 
 
@@ -173,6 +177,7 @@ class NeuralNet(object):
             delta_prev = delta
             # Use delta_prev to compute delta factor for the next layer (in backpropagation direction)
             grad_w, delta = layer.backward(x, delta_prev)
+            print("Layer {0}: {1}".format(i, grad_w.shape))
             grad_list.append(grad_w.copy())
 
         grad_list = grad_list[::-1]
@@ -267,7 +272,28 @@ def minibatch_train(net, train_x, train_y, cfg):
     :param cfg: Config object
     """
     # [TODO 1.6] Implement mini-batch training
-    pass
+    train_set_x = train_x[:cfg.num_train].copy()
+    train_set_y = train_y[:cfg.num_train].copy()
+    train_set_y = create_one_hot(train_set_y, net.num_class)
+    all_loss = []
+
+    for e in range(cfg.num_epoch):
+        all_x = net.forward(train_set_x)
+        s = all_x[-1]
+        loss = net.compute_loss(train_set_y, s)
+        grads = net.backward(train_set_y, all_x)
+        net.update_weight(grads, cfg.learning_rate)
+
+        all_loss.append(loss)
+
+        if (cfg.visualize and e % cfg.epochs_to_draw == cfg.epochs_to_draw-1):
+            s = net.forward(train_x[0::3])[-1]
+            visualize_point(train_x[0::3], train_y[0::3], s)
+            plot_loss(all_loss, 2)
+            plt.show()
+            plt.pause(0.01)
+
+        print("Epoch %d: loss is %.5f" % (e+1, loss))
     
 
 
