@@ -58,7 +58,6 @@ class Layer(object):
             result = softmax(x.dot(self.w))
 
         self.output = result
-
         return result
 
     def backward(self, x, delta_prev):
@@ -69,21 +68,19 @@ class Layer(object):
         :param delta_prev: delta computed from the next layer (in feedforward direction) or previous layer (in backpropagation direction)
         """
         # [TODO 1.2]
-
-        if(self.activation == 'sigmoid'):
+        if self.activation == 'sigmoid':
             grad = sigmoid_grad(self.output)
-        
-        elif(self.activation == 'tanh'):
+
+        elif self.activation == 'tanh':
             grad = tanh_grad(self.output)
 
-        elif(self.activation == 'relu'):
+        elif self.activation == 'relu':
             grad = reLU_grad(self.output)
 
-        w_grad = x.T.dot(grad)
+        delta = delta_prev * grad
+        w_grad = x.T.dot(delta)
         # [TODO 1.4] Implement L2 regularization on weights here
         w_grad += self.reg * self.w
-
-        delta = (delta_prev * grad).dot(self.w.T)
 
         return w_grad, delta.copy()
 
@@ -138,15 +135,13 @@ class NeuralNet(object):
 
         # [TODO 1.3]
         # Estimating cross entropy loss from s and y 
-        data_loss = -1 * np.sum(y * np.log(s))
+        data_loss = -1 * np.sum(y * np.log(s)) / len(y)
 
         # Estimating regularization loss from all layers
         reg_loss = 0.0
-
         for layer in self.layers:
-            reg_loss += np.sum(layer.w ** 2) * layer.reg
+            reg_loss += np.sum(layer.w ** 2) * layer.reg / 2
 
-        reg_loss /= 2
         data_loss += reg_loss
 
         return data_loss
@@ -160,11 +155,11 @@ class NeuralNet(object):
         
         # [TODO 1.5] Compute delta factor from the output
         y_hat = all_x[-1]
-        delta = self.compute_loss(y, y_hat)
+        delta = y_hat - y
         delta /= y.shape[0]
         
         # [TODO 1.5] Compute gradient of the loss function with respect to w of softmax layer, use delta from the output
-        grad_last = all_x[-2] * delta
+        grad_last = all_x[-2].T.dot(delta)
 
         grad_list = []
         grad_list.append(grad_last)
@@ -174,10 +169,9 @@ class NeuralNet(object):
             layer = self.layers[i]
             x = all_x[i]
             # [TODO 1.5] Compute delta_prev factor for previous layer (in backpropagation direction)
-            delta_prev = delta
+            delta_prev = delta.dot(prev_layer.w.T)
             # Use delta_prev to compute delta factor for the next layer (in backpropagation direction)
             grad_w, delta = layer.backward(x, delta_prev)
-            print("Layer {0}: {1}".format(i, grad_w.shape))
             grad_list.append(grad_w.copy())
 
         grad_list = grad_list[::-1]
@@ -193,7 +187,6 @@ class NeuralNet(object):
         for i in range(len(self.layers)):
             layer = self.layers[i]
             grad = grad_list[i]
-            print("Layer {0}: w={1}, grad={2}".format(i, layer.w.shape, grad.shape))
             layer.w = layer.w - learning_rate * grad
     
     
@@ -218,7 +211,7 @@ def test(s, test_y):
     :param s: predicted probabilites, output of classifier.feed_forward
     :param test_y: test labels
     """
-    if s.ndim == 2:
+    if (s.ndim == 2):
         y_hat = np.argmax(s, axis=1)
     num_class = np.unique(test_y).size
     confusion_mat = np.zeros((num_class, num_class))
@@ -273,28 +266,7 @@ def minibatch_train(net, train_x, train_y, cfg):
     :param cfg: Config object
     """
     # [TODO 1.6] Implement mini-batch training
-    train_set_x = train_x[:cfg.num_train].copy()
-    train_set_y = train_y[:cfg.num_train].copy()
-    train_set_y = create_one_hot(train_set_y, net.num_class)
-    all_loss = []
-
-    for e in range(cfg.num_epoch):
-        all_x = net.forward(train_set_x)
-        s = all_x[-1]
-        loss = net.compute_loss(train_set_y, s)
-        grads = net.backward(train_set_y, all_x)
-        net.update_weight(grads, cfg.learning_rate)
-
-        all_loss.append(loss)
-
-        if (cfg.visualize and e % cfg.epochs_to_draw == cfg.epochs_to_draw-1):
-            s = net.forward(train_x[0::3])[-1]
-            visualize_point(train_x[0::3], train_y[0::3], s)
-            plot_loss(all_loss, 2)
-            plt.show()
-            plt.pause(0.01)
-
-        print("Epoch %d: loss is %.5f" % (e+1, loss))
+    pass
     
 
 
@@ -346,9 +318,8 @@ def bat_classification():
     train_x = add_one(train_x) 
     test_x = add_one(test_x)
 
-    print("x train: {0}, y_train: {1}".format(train_x.shape, train_y.shape))
     # Define hyper-parameters and train-related parameters
-    cfg = Config(num_epoch=1000, learning_rate=0.001, num_train=train_x.shape[0])
+    cfg = Config(num_epoch=1000, learning_rate=0.01, num_train=train_x.shape[0])
 
     # Create NN classifier
     num_hidden_nodes = 100
@@ -360,15 +331,15 @@ def bat_classification():
     net.add_linear_layer((num_hidden_nodes_2, num_hidden_nodes_3), 'relu')
     net.add_linear_layer((num_hidden_nodes_3, num_class), 'softmax')
     
-    # Sanity check - train in small number of samples to see the overfitting problem- the loss value should decrease rapidly
-    # cfg.num_train = 500
-    # batch_train(net, train_x, train_y, cfg)
+    #Sanity check - train in small number of samples to see the overfitting problem- the loss value should decrease rapidly
+    #cfg.num_train = 500
+    #batch_train(net, train_x, train_y, cfg)
 
-    # Batch training - train all dataset
-    # batch_train(net, train_x, train_y, cfg)
+    #Batch training - train all dataset
+    batch_train(net, train_x, train_y, cfg)
 
-    # Minibatch training - training dataset using Minibatch approach
-    minibatch_train(net, train_x, train_y, cfg)
+    #Minibatch training - training dataset using Minibatch approach
+    # minibatch_train(net, train_x, train_y, cfg)
     
     s = net.forward(test_x)[-1]
     test(s, test_y)
@@ -400,7 +371,7 @@ def mnist_classification():
     net.add_linear_layer((num_hidden_nodes_2, num_hidden_nodes_3), 'relu')
     net.add_linear_layer((num_hidden_nodes_3, num_class), 'softmax')
      
-    # Minibatch training - training dataset using Minibatch approach
+    #Minibatch training - training dataset using Minibatch approach
     minibatch_train(net, train_x, train_y, cfg)
     
     s = net.forward(test_x)[-1]
@@ -410,12 +381,12 @@ def mnist_classification():
 if __name__ == '__main__':
     np.random.seed(2017)
     
-    # numerical check for your layer feedforward and backpropagation
+    #numerical check for your layer feedforward and backpropagation
     your_layer = Layer((60, 100), 'sigmoid')
     unit_test_layer(your_layer)
 
     plt.ion()
     bat_classification()
-    mnist_classification()
+    # mnist_classification()
 
-    pdb.set_trace()
+    # pdb.set_trace()
