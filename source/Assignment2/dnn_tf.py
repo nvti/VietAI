@@ -6,9 +6,11 @@ Author: Kien Huynh
 import numpy as np
 import tensorflow as tf
 import matplotlib.pyplot as plt
-from util import * 
+from tensorflow.python.estimator.canned.dnn import DNNClassifier
+
+from util import *
 from dnn_np import test
-import pdb
+# import pdb
 
 
 def bat_classification():
@@ -17,13 +19,14 @@ def bat_classification():
     train_x, train_y, test_x, test_y = get_bat_data()
     train_x, _, test_x = normalize(train_x, train_x, test_x)    
 
-    test_y  = test_y.flatten().astype(np.int32)
+    test_y = test_y.flatten().astype(np.int32)
     train_y = train_y.flatten().astype(np.int32)
     num_class = (np.unique(train_y)).shape[0]
  
     # DNN parameters
     hidden_layers = [100, 100, 100]
-    learning_rate = 0.1
+    learning_rate = 0.001
+    momentum = 0.0005
     batch_size = 200
     steps = 2000
    
@@ -37,7 +40,7 @@ def bat_classification():
     # tf.nn.elu
     # tf.nn.sigmoid
     # tf.nn.tanh
-    activation = None
+    activation = tf.nn.relu
     
     # [TODO 1.7] Create a neural network and train it using estimator
 
@@ -54,18 +57,26 @@ def bat_classification():
     # tf.train.ProximalAdagradOptimizer
     # tf.train.RMSPropOptimizer
     # Create optimizer
-    optimizer = None
-
-    # optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.01)
-    # optimizer = tf.train.MomentumOptimizer(learning_rate=0.01, momentum=0.005)
+    # optimizer = tf.train.GradientDescentOptimizer(learning_rate=learning_rate)
+    # optimizer = tf.train.MomentumOptimizer(learning_rate=learning_rate, momentum=momentum)
+    optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
     
     # build a deep neural network
     # https://www.tensorflow.org/api_docs/python/tf/estimator/DNNClassifier
-    classifier = None 
+    classifier = DNNClassifier(feature_columns=feature_columns,
+                               optimizer=optimizer,
+                               activation_fn=activation,
+                               hidden_units=hidden_layers,
+                               n_classes=num_class)
     
     # Define the training inputs
     # https://www.tensorflow.org/api_docs/python/tf/estimator/inputs/numpy_input_fn
-    train_input_fn = None 
+    train_input_fn = tf.estimator.inputs.numpy_input_fn(
+        x={"x": train_x},
+        y=train_y,
+        batch_size=batch_size,
+        num_epochs=None,
+        shuffle=True)
     
     # Train model.
     classifier.train(
@@ -78,12 +89,17 @@ def bat_classification():
                                     y=test_y,
                                     num_epochs=1,
                                     shuffle=False)
-    
+
+    # Evaluate accuracy
+    accuracy_score = classifier.evaluate(input_fn=test_input_fn)["accuracy"]
+    print("\nTest Accuracy: {0:f}%\n".format(accuracy_score * 100))
+
     # Evaluate accuracy. 
     predict_input_fn = tf.estimator.inputs.numpy_input_fn(
-      x={"x": test_x},
-      num_epochs=1,
-      shuffle=False)
+        x={"x": test_x},
+        num_epochs=1,
+        shuffle=False)
+
     y_hat = classifier.predict(input_fn=predict_input_fn)
     y_hat = list(y_hat)
     y_hat = np.asarray([int(x['classes'][0]) for x in y_hat]) 
@@ -100,31 +116,43 @@ def mnist_classification():
     val_y = val_y.flatten().astype(np.int32)
     test_y = test_y.flatten().astype(np.int32)
     num_class = (np.unique(train_y)).shape[0]
-    pdb.set_trace()
+    # pdb.set_trace()
 
     # DNN parameters
     hidden_layers = [100, 100, 100]
-    learning_rate = 0.1
+    learning_rate = 0.001
+    momentum = 0.0005
     batch_size = 200
-    steps = 500
+    steps = 2000
    
     # Specify that all features have real-value data
     feature_columns = [tf.feature_column.numeric_column("x", shape=[train_x.shape[1]])]
 
 
     # Choose activation function
-    activation = None
+    activation = tf.nn.relu
     
     # Some available gradient descent optimization algorithms 
     # TODO: [YC1.7] Create optimizer
-    optimizer = None 
-    
+    # optimizer = tf.train.GradientDescentOptimizer(learning_rate=learning_rate)
+    optimizer = tf.train.MomentumOptimizer(learning_rate=learning_rate, momentum=momentum)
+    # optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
+
     # build a deep neural network
-    classifier = None 
+    classifier = DNNClassifier(feature_columns=feature_columns,
+                               optimizer=optimizer,
+                               activation_fn=activation,
+                               hidden_units=hidden_layers,
+                               n_classes=num_class)
     
     # Define the training inputs
     # https://www.tensorflow.org/api_docs/python/tf/estimator/inputs/numpy_input_fn
-    train_input_fn = None
+    train_input_fn = tf.estimator.inputs.numpy_input_fn(
+        x={"x": train_x},
+        y=train_y,
+        batch_size=batch_size,
+        num_epochs=None,
+        shuffle=True)
     
     # Train model.
     classifier.train(
@@ -137,12 +165,16 @@ def mnist_classification():
                                     y=test_y,
                                     num_epochs=1,
                                     shuffle=False)
-    
+    # Evaluate accuracy
+    accuracy_score = classifier.evaluate(input_fn=test_input_fn)["accuracy"]
+    print("\nTest Accuracy: {0:f}%\n".format(accuracy_score * 100))
+
     # Evaluate accuracy. 
     predict_input_fn = tf.estimator.inputs.numpy_input_fn(
       x={"x": test_x},
       num_epochs=1,
       shuffle=False)
+
     y_hat = classifier.predict(input_fn=predict_input_fn)
     y_hat = list(y_hat)
     y_hat = np.asarray([int(x['classes'][0]) for x in y_hat]) 
@@ -150,8 +182,9 @@ def mnist_classification():
 
 
 if __name__ == '__main__':
-    np.random.seed(2017) 
+    np.random.seed(2017)
+    tf.random.set_random_seed(2017)
 
     plt.ion()
-    problem1()
-    problem2()
+    bat_classification()
+    mnist_classification()

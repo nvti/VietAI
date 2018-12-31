@@ -163,7 +163,7 @@ class NeuralNet(object):
 
         grad_list = []
         grad_list.append(grad_last)
-        
+
         for i in range(len(self.layers) - 1)[::-1]:
             prev_layer = self.layers[i+1]
             layer = self.layers[i]
@@ -211,8 +211,14 @@ def test(s, test_y):
     :param s: predicted probabilites, output of classifier.feed_forward
     :param test_y: test labels
     """
-    if (s.ndim == 2):
+    # print("s.ndim={0}".format(s.ndim))
+    # print(s)
+    # print(test_y)
+
+    if s.ndim == 2:
         y_hat = np.argmax(s, axis=1)
+    if s.ndim == 1:
+        y_hat = s
     num_class = np.unique(test_y).size
     confusion_mat = np.zeros((num_class, num_class))
 
@@ -221,7 +227,7 @@ def test(s, test_y):
         num_class_i = np.sum(class_i_idx)
         y_hat_i = y_hat[class_i_idx]
         for j in range(num_class):
-            confusion_mat[i,j] = 1.0*np.sum(y_hat_i == j)/num_class_i
+            confusion_mat[i, j] = 1.0*np.sum(y_hat_i == j)/num_class_i
 
     np.set_printoptions(precision=2)
     print('Confusion matrix:')
@@ -266,7 +272,38 @@ def minibatch_train(net, train_x, train_y, cfg):
     :param cfg: Config object
     """
     # [TODO 1.6] Implement mini-batch training
-    pass
+    train_set_x_ori = train_x[:cfg.num_train].copy()
+    train_set_y_ori = train_y[:cfg.num_train].copy()
+    train_set_y_ori = create_one_hot(train_set_y_ori, net.num_class)
+    all_loss = []
+
+    batch_size = cfg.batch_size
+
+    for e in range(cfg.num_epoch):
+        # shuffle data
+        rd_id = np.random.permutation(cfg.num_train)
+        train_set_x_rd = train_set_x_ori[rd_id]
+        train_set_y_rd = train_set_y_ori[rd_id]
+        for i in range(int(cfg.num_train / batch_size)):
+            train_set_x = train_set_x_rd[i * batch_size: (i + 1) * batch_size - 1, :]
+            train_set_y = train_set_y_rd[i * batch_size: (i + 1) * batch_size - 1, :]
+
+            all_x = net.forward(train_set_x)
+            s = all_x[-1]
+            loss = net.compute_loss(train_set_y, s)
+            grads = net.backward(train_set_y, all_x)
+            net.update_weight(grads, cfg.learning_rate)
+
+            all_loss.append(loss)
+
+        if (cfg.visualize and e % cfg.epochs_to_draw == cfg.epochs_to_draw-1):
+            s = net.forward(train_x[0::3])[-1]
+            visualize_point(train_x[0::3], train_y[0::3], s)
+            plot_loss(all_loss, 2)
+            plt.show()
+            plt.pause(0.01)
+
+        print("Epoch %d: loss is %.5f" % (e+1, loss))
     
 
 
@@ -319,7 +356,7 @@ def bat_classification():
     test_x = add_one(test_x)
 
     # Define hyper-parameters and train-related parameters
-    cfg = Config(num_epoch=1000, learning_rate=0.01, num_train=train_x.shape[0])
+    cfg = Config(num_epoch=1000, learning_rate=0.001, batch_size=200, num_train=train_x.shape[0])
 
     # Create NN classifier
     num_hidden_nodes = 100
@@ -359,7 +396,7 @@ def mnist_classification():
     test_x = add_one(test_x)
 
     # Define hyper-parameters and train-related parameters
-    cfg = Config(num_epoch=300, learning_rate=0.001, batch_size=200, num_train=train_x.shape, visualize=False)
+    cfg = Config(num_epoch=300, learning_rate=0.001, batch_size=200, num_train=train_x.shape[0], visualize=True)
 
     # Create NN classifier
     num_hidden_nodes = 100
@@ -370,10 +407,12 @@ def mnist_classification():
     net.add_linear_layer((num_hidden_nodes, num_hidden_nodes_2), 'relu')
     net.add_linear_layer((num_hidden_nodes_2, num_hidden_nodes_3), 'relu')
     net.add_linear_layer((num_hidden_nodes_3, num_class), 'softmax')
-     
+
+    #Batch training - train all dataset
+    # batch_train(net, train_x, train_y, cfg)
     #Minibatch training - training dataset using Minibatch approach
     minibatch_train(net, train_x, train_y, cfg)
-    
+
     s = net.forward(test_x)[-1]
     test(s, test_y)
 
