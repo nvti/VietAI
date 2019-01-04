@@ -304,6 +304,9 @@ def minibatch_train(net, train_x, train_y, cfg):
             plt.pause(0.01)
 
         print("Epoch %d: loss is %.5f" % (e+1, loss))
+
+    if cfg.visualize:
+        plt.close('all')
     
 
 
@@ -327,7 +330,8 @@ def batch_train(net, train_x, train_y, cfg):
         s = all_x[-1]
         loss = net.compute_loss(train_set_y, s)
         grads = net.backward(train_set_y, all_x)
-        net.update_weight(grads, cfg.learning_rate)
+        # net.update_weight(grads, cfg.learning_rate)
+        net.update_weight_momentum(grads, cfg.learning_rate, cfg.momentum_rate)
 
         all_loss.append(loss)
 
@@ -339,7 +343,9 @@ def batch_train(net, train_x, train_y, cfg):
             plt.pause(0.01)
 
         print("Epoch %d: loss is %.5f" % (e+1, loss))
-    
+
+    if cfg.visualize:
+        plt.close('all')
 
 def bat_classification():
     # Load data from file
@@ -356,7 +362,7 @@ def bat_classification():
     test_x = add_one(test_x)
 
     # Define hyper-parameters and train-related parameters
-    cfg = Config(num_epoch=1000, learning_rate=0.001, batch_size=200, num_train=train_x.shape[0])
+    cfg = Config(num_epoch=2000, learning_rate=0.05, batch_size=200, num_train=train_x.shape[0], momentum_rate=0.9)
 
     # Create NN classifier
     num_hidden_nodes = 100
@@ -396,7 +402,7 @@ def mnist_classification():
     test_x = add_one(test_x)
 
     # Define hyper-parameters and train-related parameters
-    cfg = Config(num_epoch=300, learning_rate=0.001, batch_size=200, num_train=train_x.shape[0], visualize=True)
+    cfg = Config(num_epoch=300, learning_rate=0.001, batch_size=200, num_train=train_x.shape[0], visualize=False)
 
     # Create NN classifier
     num_hidden_nodes = 100
@@ -426,6 +432,6 @@ if __name__ == '__main__':
 
     plt.ion()
     bat_classification()
-    # mnist_classification()
+    mnist_classification()
 
     # pdb.set_trace()
